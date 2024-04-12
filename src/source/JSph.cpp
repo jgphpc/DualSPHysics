@@ -1259,7 +1259,7 @@ void JSph::LoadCodeParticles(unsigned np, const unsigned *idp, typecode *code, t
   /* CSCS spheric/test16: */
   float U_0 = 1.f;
   float A = 4 * sqrt(2) / (3 * sqrt(3)) * U_0;
-  float k_0 = 1.f;
+  float k_0 = TWOPI;
 /* OR double k = 2 * M_PI / L; */
 
   float pi_2 = 1.57079632679489661923;
