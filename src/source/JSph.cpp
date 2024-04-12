@@ -1254,9 +1254,47 @@ void JSph::VisuDemCoefficients()const{
 /// Carga el codigo de grupo de las particulas y marca las nout ultimas
 /// particulas como excluidas.
 //==============================================================================
-void JSph::LoadCodeParticles(unsigned np,const unsigned *idp,typecode *code)const{
-  //-Assigns code to each group of particles.
-  for(unsigned p=0;p<np;p++)code[p]=MkInfo->GetCodeById(idp[p]);
+// void JSph::LoadCodeParticles(unsigned np,const unsigned *idp,typecode *code)const{
+void JSph::LoadCodeParticles(unsigned np, const unsigned *idp, typecode *code, tdouble3 *pos, tfloat4 *velrho)const{
+  /* CSCS spheric/test16: */
+  float U_0 = 1.f;
+  float A = 4 * sqrt(2) / (3 * sqrt(3)) * U_0;
+  float k_0 = 1.f;
+/* OR double k = 2 * M_PI / L; */
+
+  float pi_2 = 1.57079632679489661923;
+  float pi_3 = 1.04719755119659774615;
+/*
+  # grep PI TypesDef.h
+  #define PI 3.14159265358979323846      // <Value of cte PI.
+  #define TWOPI 6.28318530717958647692   // <Value of cte PI*2.
+  #define PIHALF 1.57079632679489661923  // <Value of cte PI/2.
+*/
+//-Assigns code to each group of particles.
+  for(unsigned p=0;p<np;p++) {
+    code[p]=MkInfo->GetCodeById(idp[p]);
+    velrho[p].x = A * (
+      sin(k_0*pos[p].x-pi_3) * cos(k_0*pos[p].y+pi_3) * sin(k_0*pos[p].z+pi_2)
+      -
+      cos(k_0*pos[p].z-pi_3) * sin(k_0*pos[p].x+pi_3) * sin(k_0*pos[p].y+pi_2)
+      );
+    velrho[p].y = A * (
+      sin(k_0*pos[p].y-pi_3) * cos(k_0*pos[p].z+pi_3) * sin(k_0*pos[p].x+pi_2)
+      -
+      cos(k_0*pos[p].x-pi_3) * sin(k_0*pos[p].y+pi_3) * sin(k_0*pos[p].z+pi_2)
+      );
+    velrho[p].z = A * (
+      sin(k_0*pos[p].z-pi_3) * cos(k_0*pos[p].x+pi_3) * sin(k_0*pos[p].y+pi_2)
+      -
+      cos(k_0*pos[p].y-pi_3) * sin(k_0*pos[p].z+pi_3) * sin(k_0*pos[p].x+pi_2)
+      );
+    velrho[p].w = RhopZero;
+  /* TODO:
+  T kx = d.x[i] * k;
+  T ky = d.y[i] * k;
+  T kz = d.z[i] * k;
+  */
+  }
 }
 
 //==============================================================================

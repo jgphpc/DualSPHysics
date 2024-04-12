@@ -129,7 +129,8 @@ void JSphCpuSingle::ConfigDomain(){
   if(MLPistons)MLPistons->PreparePiston(Dp,Np,Idpc,Posc);
 
   //-Load particle code. | Carga code de particulas.
-  LoadCodeParticles(Np,Idpc,Codec);
+  //-CSCS: LoadCodeParticles(Np,Idpc,Codec);
+  LoadCodeParticles(Np,Idpc,Codec,Posc,Velrhopc);
 
   //-Load normals for boundary particles (fixed and moving).
   if(UseNormals)LoadBoundNormals(Np,Npb,Idpc,Codec,BoundNormalc);

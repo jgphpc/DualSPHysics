@@ -438,7 +438,9 @@ protected:
   StDemData LoadDemData(bool checkdata,const JCasePartBlock* block)const;
   void VisuDemCoefficients()const;
 
-  void LoadCodeParticles(unsigned np,const unsigned *idp,typecode *code)const;
+  void LoadCodeParticles(unsigned np, const unsigned *idp, typecode *code, tdouble3 *pos, tfloat4 *velrho)const;
+  // void LoadCodeParticles(unsigned np, const unsigned *idp, typecode *code, tfloat3 *pos, tfloat4 *velrho)const;
+  //cscs void LoadCodeParticles(unsigned np,const unsigned *idp,typecode *code)const;
   void LoadBoundNormals(unsigned np,unsigned npb,const unsigned *idp,const typecode *code,tfloat3 *boundnormal);
   void ConfigBoundNormals(unsigned np,unsigned npb,const tdouble3 *pos,const unsigned *idp,tfloat3 *boundnormal);
 
