@@ -1,0 +1,143 @@
+
+
+ <DUALSPHYSICS5> Copyright (c) 2023 by
+ Dr Jose M. Dominguez Alonso, Dr Alejandro Crespo,
+ Prof. Moncho Gomez Gesteira, Prof. Benedict Rogers,
+ Dr Georgios Fourtakas, Prof. Peter Stansby,
+ Dr Renato Vacondio, Dr Corrado Altomare, Dr Angelo Tafuni,
+ Dr Orlando Garcia Feal, Ivan Martinez Estevez,
+ Dr Joseph O'Connor, Dr Aaron English
+
+ EPHYSLAB Environmental Physics Laboratory, Universidade de Vigo
+ School of Mechanical, Aerospace and Civil Engineering, University of Manchester
+
+ DualSPHysics is free software: you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public License
+ as published by the Free Software Foundation, either version 2.1 of
+ the License, or (at your option) any later version.
+
+ DualSPHysics is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU Lesser General Public License for more details.
+
+ You should have received a copy of the GNU Lesser General Public License
+ along with DualSPHysics. If not, see <http://www.gnu.org/licenses/>.
+
+ Free download source files and documentation from DualSPHysics website (http://dual.sphysics.org).
+ Full list of developers and contributors is available at https://dual.sphysics.org/developers
+ Properly cite the use of DualSPHysics (Dominguez et al., 2022) (https://dual.sphysics.org/references).
+
+
+DualSPHysics5 v5.2.269 (03-04-2023)
+====================================
+Threads by host for parallel execution: 20
+[Initialising JSphCpuSingle  12-04-2024 15:52:48]
+ProgramFile=".../spheric/test16/DualSPHysics5.2CPU_linux64"
+ExecutionDir=".../others/spheric/test16"
+XmlFile=".../test16/cubeside_30/30.xml"
+OutputDir=".../spheric/test16/cubeside_30"
+OutputDataDir=".../test16/cubeside_30/data"
+XML-App: GenCase v5.0.278c (30-10-2023)
+XML-Vars (uservars + ctes): MResId=[0]  CaseName=["30"]  Data2D=[0]  Data2DPosy=[0]  H=[0.0685892]  KernelSize=[0.137178]  B=[536467]  Gamma=[7]  Rhop0=[1000]  Dp=[0.033]  Gravity_x=[0]  Gravity_y=[0]  Gravity_z=[-9.81]  MassFluid=[0.035937]  MassBound=[0.035937]
+XML-Vars (parameters): TimeMax=[1.5]  TimeOut=[0.01]
+**Basic case configuration is loaded
+**Special case configuration is loaded
+Loading initial state of particles...
+Loaded particles: 27000
+MapRealPos(border)=(-0.00342946,-0.00342946,-0.00342946)-(0.960429,0.960429,0.960429)
+MapRealPos(final)=(-0.00342946,-0.00342946,-0.00342946)-(0.960429,0.960429,0.960429)
+**Initial state of particles is loaded
+**3D-Simulation parameters:
+CaseName="30"
+RunName="30"
+Symmetry=False
+SavePosDouble=False
+SvExtraParts=""
+SaveFtAce=False
+SvTimers=True
+Boundary="DBC"
+StepAlgorithm="Symplectic"
+Kernel="Wendland"
+  Wendland.awen=1294.733
+  Wendland.bwen=-94383.59
+Viscosity="Artificial"
+  Visco=0.01
+  ViscoBoundFactor=1
+DensityDiffusion="None"
+Shifting="None"
+RigidAlgorithm="None"
+FloatingCount=0
+CaseNp=27000
+CaseNbound=0
+CaseNfixed=0
+CaseNmoving=0
+CaseNfloat=0
+CaseNfluid=27000
+PeriodicActive="None"
+Dp=0.033
+KernelH=0.068589  (CoefficientH=1.2; H/Dp=2.07846)
+KernelSize=0.1371784
+CteB=536466.9
+Gamma=7
+RhopZero=1000
+Cs0=61.28024253378898
+CFLnumber=0.2
+DtIni=0.001119271198583049
+DtMin=5.596356076307446e-05
+DtAllParticles=False
+MassFluid=0.035937
+MassBound=0.035937
+TimeMax=1.5
+TimePart=0.01
+Gravity=(0,0,-9.81)
+NpMinimum=0
+RhopOut=True
+RhopOutMin=700
+RhopOutMax=1300
+WrnPartsOut=True
+CellMode="Full"
+ScellDiv=1
+MapCells=(8,8,8)
+CellDomFixed=False
+**Requested CPU memory for 27128 particles: 4.0 MB.
+DomCells=(8,8,8)
+DomCellCode="1+11_10_10"
+**CellDiv: Requested cpu memory for 28478 particles: 0.9 MB.
+**CellDiv: Requested cpu memory for 729 cells (CellMode=Full): 0.0 MB.
+ 
+RunMode="Pos-Double - OpenMP(Threads:20)"
+ 
+Particle summary:
+  Fixed....: 0
+  Moving...: 0
+  Floating.: 0
+  Fluid....: 27000  id:(0-26999)   MKs:1 (1)
+
+Total particles: 27000 (bound=0 (fx=0 mv=0 ft=0) fluid=27000)
+Total MK blocks: 1 (bound=0 (fx=0 mv=0 ft=0) fluid=1)
+ 
+Allocated memory in CPU: 5201052 (4.96 MB)
+Part_0000        27000 particles successfully stored
+
+[Initialising simulation (u62x2650)  12-04-2024 15:52:48]
+PART       PartTime      TotalSteps    Steps    Time/Sec   Finish time        
+=========  ============  ============  =======  =========  ===================
+Part_0001      0.010198            42       42     428.92  12-04-2024 16:03:31
+  Particles out: 1915  (total out: 1915)  -  Current np: 25085
+
+*** WARNING: More than 1% of current fluid particles were excluded in one PART (t:0.0101985, nstep:41)
+
+Part_0002      0.020138            87       45     423.28  12-04-2024 16:03:27
+  Particles out: 363  (total out: 2278)  -  Current np: 24722
+Part_0003      0.030083           132       45     434.56  12-04-2024 16:03:31
+  Particles out: 292  (total out: 2570)  -  Current np: 24430
+Part_0004      0.040038           177       45     483.16  12-04-2024 16:03:51
+  Particles out: 485  (total out: 3055)  -  Current np: 23945
+
+*** WARNING: More than 10% of particles were excluded (t:0.0400382, nstep:176)
+
+Part_0005      0.050198           223       46     423.40  12-04-2024 16:03:45
+  Particles out: 477  (total out: 3532)  -  Current np: 23468
+Part_0006      0.060103           268       45     413.52  12-04-2024 16:03:39
+  Particles out: 512  (total out: 4044)  -  Current np: 22956
