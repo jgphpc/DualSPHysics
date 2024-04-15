@@ -31,15 +31,15 @@
 
 DualSPHysics5 v5.2.269 (03-04-2023)
 ====================================
-Threads by host for parallel execution: 20
-[Initialising JSphCpuSingle  12-04-2024 15:52:48]
-ProgramFile=".../spheric/test16/DualSPHysics5.2CPU_linux64"
-ExecutionDir=".../others/spheric/test16"
-XmlFile=".../test16/cubeside_30/30.xml"
-OutputDir=".../spheric/test16/cubeside_30"
-OutputDataDir=".../test16/cubeside_30/data"
+Threads by host for parallel execution: 4
+[Initialising JSphCpuSingle  15-04-2024 13:05:41]
+ProgramFile=".../bin/linux/DualSPHysics5.2CPU_linux64"
+ExecutionDir="/usr/local/games"
+XmlFile=".../eff.033/eff.033_out/eff.033.xml"
+OutputDir=".../local/games/eff.033_out"
+OutputDataDir=".../games/eff.033_out/data"
 XML-App: GenCase v5.0.278c (30-10-2023)
-XML-Vars (uservars + ctes): MResId=[0]  CaseName=["30"]  Data2D=[0]  Data2DPosy=[0]  H=[0.0685892]  KernelSize=[0.137178]  B=[536467]  Gamma=[7]  Rhop0=[1000]  Dp=[0.033]  Gravity_x=[0]  Gravity_y=[0]  Gravity_z=[-9.81]  MassFluid=[0.035937]  MassBound=[0.035937]
+XML-Vars (uservars + ctes): MResId=[0]  CaseName=["eff.033"]  Data2D=[0]  Data2DPosy=[0]  H=[0.0685892]  KernelSize=[0.137178]  B=[536467]  Gamma=[7]  Rhop0=[1000]  Dp=[0.033]  Gravity_x=[0]  Gravity_y=[0]  Gravity_z=[-9.81]  MassFluid=[0.035937]  MassBound=[0.035937]
 XML-Vars (parameters): TimeMax=[1.5]  TimeOut=[0.01]
 **Basic case configuration is loaded
 **Special case configuration is loaded
@@ -49,8 +49,8 @@ MapRealPos(border)=(-0.00342946,-0.00342946,-0.00342946)-(0.960429,0.960429,0.96
 MapRealPos(final)=(-0.00342946,-0.00342946,-0.00342946)-(0.960429,0.960429,0.960429)
 **Initial state of particles is loaded
 **3D-Simulation parameters:
-CaseName="30"
-RunName="30"
+CaseName="eff.033"
+RunName="eff.033"
 Symmetry=False
 SavePosDouble=False
 SvExtraParts=""
@@ -106,7 +106,7 @@ DomCellCode="1+11_10_10"
 **CellDiv: Requested cpu memory for 28478 particles: 0.9 MB.
 **CellDiv: Requested cpu memory for 729 cells (CellMode=Full): 0.0 MB.
  
-RunMode="Pos-Double - OpenMP(Threads:20)"
+RunMode="Pos-Double - OpenMP(Threads:4)"
  
 Particle summary:
   Fixed....: 0
@@ -120,24 +120,15 @@ Total MK blocks: 1 (bound=0 (fx=0 mv=0 ft=0) fluid=1)
 Allocated memory in CPU: 5201052 (4.96 MB)
 Part_0000        27000 particles successfully stored
 
-[Initialising simulation (u62x2650)  12-04-2024 15:52:48]
+[Initialising simulation (pmbib65s)  15-04-2024 13:06:03]
 PART       PartTime      TotalSteps    Steps    Time/Sec   Finish time        
 =========  ============  ============  =======  =========  ===================
-Part_0001      0.010198            42       42     428.92  12-04-2024 16:03:31
+Part_0001      0.010198            42       42    3913.65  15-04-2024 14:43:52
   Particles out: 1915  (total out: 1915)  -  Current np: 25085
 
 *** WARNING: More than 1% of current fluid particles were excluded in one PART (t:0.0101985, nstep:41)
 
-Part_0002      0.020138            87       45     423.28  12-04-2024 16:03:27
+Part_0002      0.020138            87       45    4238.65  15-04-2024 14:47:54
   Particles out: 363  (total out: 2278)  -  Current np: 24722
-Part_0003      0.030083           132       45     434.56  12-04-2024 16:03:31
+Part_0003      0.030083           132       45    4049.71  15-04-2024 14:47:42
   Particles out: 292  (total out: 2570)  -  Current np: 24430
-Part_0004      0.040038           177       45     483.16  12-04-2024 16:03:51
-  Particles out: 485  (total out: 3055)  -  Current np: 23945
-
-*** WARNING: More than 10% of particles were excluded (t:0.0400382, nstep:176)
-
-Part_0005      0.050198           223       46     423.40  12-04-2024 16:03:45
-  Particles out: 477  (total out: 3532)  -  Current np: 23468
-Part_0006      0.060103           268       45     413.52  12-04-2024 16:03:39
-  Particles out: 512  (total out: 4044)  -  Current np: 22956
