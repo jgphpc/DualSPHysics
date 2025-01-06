@@ -98,13 +98,34 @@ void JOutputCsv::SaveCsv(std::string fname,const JDataArrays &arrays,std::string
         string fmt=outfmt[cf];
         string values;
         switch(ar.type){
-          case TypeUchar:  { const byte     *v=(byte    *)ar.ptr;  values=fun::PrintStr(fmt.c_str(),v[cv])+csvsep; }break;
+          case TypeUchar:  {
+            // Type
+            const byte     *v=(byte    *)ar.ptr;
+            values=fun::PrintStr(fmt.c_str(),v[cv])+csvsep;
+                           }break;
+
           case TypeUshort: { const word     *v=(word    *)ar.ptr;  values=fun::PrintStr(fmt.c_str(),v[cv])+csvsep; }break;
-          case TypeUint:   { const unsigned *v=(unsigned*)ar.ptr;  values=fun::PrintStr(fmt.c_str(),v[cv])+csvsep; }break;
-          case TypeFloat:  { const float    *v=(float   *)ar.ptr;  values=fun::PrintStr(fmt.c_str(),v[cv])+csvsep; }break;
+          case TypeUint:   {
+            // Idp
+            const unsigned *v=(unsigned*)ar.ptr;
+            values=fun::PrintStr(fmt.c_str(),v[cv])+csvsep; 
+                           }break;
+
+          case TypeFloat:  {
+            // Rhop
+            const float *v=(float   *)ar.ptr;
+            values=fun::PrintStr(fmt.c_str(),v[cv])+csvsep;
+                           }break;
+
           case TypeDouble: { const double   *v=(double  *)ar.ptr;  values=fun::PrintStr(fmt.c_str(),v[cv])+csvsep; }break;
           case TypeUint3:  { const tuint3   *v=(tuint3  *)ar.ptr;  values=fun::PrintStr(fmt.c_str(),v[cv].x,v[cv].y,v[cv].z)+csvsep; }break;
-          case TypeFloat3: { const tfloat3  *v=(tfloat3 *)ar.ptr;  values=fun::PrintStr(fmt.c_str(),v[cv].x,v[cv].y,v[cv].z)+csvsep; }break;
+
+          case TypeFloat3: {
+            // Pos and Vel
+            const tfloat3 *v=(tfloat3 *)ar.ptr;
+            values=fun::PrintStr(fmt.c_str(),v[cv].x,v[cv].y,v[cv].z)+csvsep; 
+                           }break;
+
           case TypeDouble3:{ const tdouble3 *v=(tdouble3*)ar.ptr;  values=fun::PrintStr(fmt.c_str(),v[cv].x,v[cv].y,v[cv].z)+csvsep; }break;
           default: Run_ExceptioonFile(fun::PrintStr("Type of array \'%s\' is invalid.",TypeToStr(ar.type)),fname);
         }

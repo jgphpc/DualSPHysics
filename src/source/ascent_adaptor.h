@@ -109,38 +109,75 @@ void Execute(
 {
     conduit::Node mesh;
     long array2_count = arrays2.Arrays[0].count;
-    tfloat3* f3Ptr = static_cast<tfloat3*>(arrays2.Arrays[0].ptr); // !
-    float*    fPtr = static_cast<float*>(arrays2.Arrays[3].ptr); // !
+    //! tfloat3* f3Ptr = static_cast<tfloat3*>(arrays2.Arrays[0].ptr); // !
+    //! float*    fPtr = static_cast<float*>(arrays2.Arrays[3].ptr); // !
+                                                                 //
     //del std::cout << "### A:array2_count=" << arrays2.Arrays[0].count << "\n";
     //del std::cout << "### B:array2_count=" << array2_count << "\n";
     //del std::cout << f3Ptr[0].x << "\n";
     //auto array2_count = arrays2.Arrays[0].count;
 //todo       conduit::Node mesh;
 //todo       auto array2_count = arrays2.Arrays[0].count;
+    // --- DualSPHysics.git/src/source/JOutputCsv.cpp
+    //nf = 5 = Pos3   + Idp  + Vel3   + Rhop  + Type
+    //Type= Float3 + Uint + Float3 + Float + Uchar # arrays.GetArrayCte(0:4)
+    //      0        1      2        3       4
+    //nv = 12750 particles
+    // DualSPHysics.git/src/source/TypesDef.h: typedef struct{ float x,y,z; }tfloat3;
+
+    //del const JDataArrays::StDataArray& ar = arrays.GetArrayCte(0);
+    //del const float* v = reinterpret_cast<const float*>(ar.ptr);
+    //
+    // Pos3
+    const tfloat3* pos3_ptr = reinterpret_cast<const tfloat3*>(arrays2.Arrays[0].ptr);
+    std::vector<tfloat3> pos3_vec(pos3_ptr, pos3_ptr + array2_count);
+    // Pos3.x
+    std::vector<float> pos3_vec_x(pos3_vec.size());
+    std::transform(pos3_vec.begin(), pos3_vec.end(), pos3_vec_x.begin(),
+                   [](const tfloat3& pos) { return pos.x; });
+    // NOTE: when a std::vector goes out of scope, its destructor is called,
+    // and the allocated memory is freed.
+    // Pos3.y
+    std::vector<float> pos3_vec_y(pos3_vec.size());
+    std::transform(pos3_vec.begin(), pos3_vec.end(), pos3_vec_y.begin(),
+                   [](const tfloat3& pos) { return pos.y; });
+    // Pos3.z
+    std::vector<float> pos3_vec_z(pos3_vec.size());
+    std::transform(pos3_vec.begin(), pos3_vec.end(), pos3_vec_z.begin(),
+                   [](const tfloat3& pos) { return pos.z; });
+    // Rhop
+    const float* rhop_ptr = reinterpret_cast<const float*>(arrays2.Arrays[3].ptr);
+    std::vector<float> rhop_vec(rhop_ptr, rhop_ptr + array2_count);
+
+    // ---
     mesh["state/cycle"].set(TimeStep);
     mesh["state/time"].set(TimeStep);
     mesh["coordsets/coords/type"] = "explicit";
-    //mesh["coordsets/coords/values/x"].set_external(&f3Ptr[0].x, array2_count);
-    mesh["coordsets/coords/values/x"].set_external(&f3Ptr[0].x, array2_count);
-    mesh["coordsets/coords/values/y"].set_external(&f3Ptr[0].y, array2_count);
-    mesh["coordsets/coords/values/z"].set_external(&f3Ptr[0].z, array2_count);
+    mesh["coordsets/coords/values/x"].set(pos3_vec_x);
+    mesh["coordsets/coords/values/y"].set(pos3_vec_y);
+    mesh["coordsets/coords/values/z"].set(pos3_vec_z);
+    //old mesh["coordsets/coords/values/x"].set_external(&f3Ptr[0].x, array2_count);
+    //old mesh["coordsets/coords/values/y"].set_external(&f3Ptr[0].y, array2_count);
+    //old mesh["coordsets/coords/values/z"].set_external(&f3Ptr[0].z, array2_count);
     mesh["topologies/mesh/type"] = "points";
     mesh["topologies/mesh/coordset"] = "coords";
     // x
     mesh["fields/x/association"] = "vertex";
     mesh["fields/x/topology"] = "mesh";
-    //mesh["fields/x/values"].set_external(&f3Ptr[0].x, array2_count);
-    mesh["fields/x/values"].set_external(&f3Ptr[0].x, array2_count);
+    mesh["fields/x/values"].set(pos3_vec_x);
+    //old mesh["fields/x/values"].set_external(&f3Ptr[0].x, array2_count);
     mesh["fields/x/volume_dependent"].set("false");
     // y
     mesh["fields/y/association"] = "vertex";
     mesh["fields/y/topology"] = "mesh";
-    mesh["fields/y/values"].set_external(&f3Ptr[0].y, array2_count);
+    mesh["fields/y/values"].set(pos3_vec_y);
+    //old mesh["fields/y/values"].set_external(&f3Ptr[0].y, array2_count);
     mesh["fields/y/volume_dependent"].set("false");
     // z
     mesh["fields/z/association"] = "vertex";
     mesh["fields/z/topology"] = "mesh";
-    mesh["fields/z/values"].set_external(&f3Ptr[0].z, array2_count);
+    mesh["fields/z/values"].set(pos3_vec_z);
+    //old mesh["fields/z/values"].set_external(&f3Ptr[0].z, array2_count);
     mesh["fields/z/volume_dependent"].set("false");
     // [0] Pos  TypeFloat3
     // [1] Idp  TypeUint
@@ -149,7 +186,8 @@ void Execute(
     // [4] Type TypeUchar
     mesh["fields/rhop/association"] = "vertex";
     mesh["fields/rhop/topology"] = "mesh";
-    mesh["fields/rhop/values"].set_external(&fPtr[0], array2_count);
+    mesh["fields/rhop/values"].set(rhop_vec);
+    //old mesh["fields/rhop/values"].set_external(&fPtr[0], array2_count);
     mesh["fields/rhop/volume_dependent"].set("false");
     // ./DualSPHysics5.2CPU_linux64 ${dirout}/${name} ${dirout} -dirdataout data -svres -sv:vtk
     conduit::Node verify_info;
