@@ -45,6 +45,14 @@
 #include "JDsPips.h"
 #include "JDsExtraData.h"
 
+//.. #include "insitu_viz.h" // ascent
+//{{{ ascent cscs
+//del #ifdef _WITH_ASCENT  
+//del #include <ascent.hpp>
+//del #include <conduit_blueprint.hpp>
+//del #endif
+//}}}
+
 #include <climits>
 
 using namespace std;
@@ -1072,6 +1080,15 @@ void JSphCpuSingle::Run(std::string appname,const JSphCfgRun *cfg,JLog2 *log){
   FreePartsInit();
   UpdateMaxValues();
   PrintAllocMemory(GetAllocMemoryCpu());
+  //{{{ ascent cscs
+//#ifdef _WITH_ASCENT  
+//..  viz::init_ascent();
+//del   ascent::Ascent a;
+//del   conduit::Node actions;
+//del   conduit::Node ascent_options;
+//del   a.open(ascent_options);
+//#endif  
+  //}}}
   SaveData(); 
   Timersc->ResetTimes();
   Timersc->TmStop(TMC_Init);
@@ -1087,7 +1104,7 @@ void JSphCpuSingle::Run(std::string appname,const JSphCfgRun *cfg,JLog2 *log){
   Log->Print(string("\n[Initialising simulation (")+RunCode+")  "+fun::GetDateTime()+"]");
   if(DsPips)ComputePips(true);
   PrintHeadPart();
-  while(TimeStep<TimeMax){
+  while(TimeStep<TimeMax){ // cscs loop
     InterStep=(TStep==STEP_Symplectic? INTERSTEP_SymPredictor: INTERSTEP_Verlet);
     if(ViscoTime)Visco=ViscoTime->GetVisco(float(TimeStep));
     if(DDTRamp.x)RunInitialDDTRamp(); //<vs_ddramp>

@@ -9,6 +9,7 @@ PROJECT(DualSPHysics)
 #------------------------------------------------------------------
 # Coupling options
 #------------------------------------------------------------------
+option(ENABLE_ASCENT "Enable the CSCS Ascent library" ON)
 option(ENABLE_MOORDYN "Enable the MoorDyn+ library" ON)
 option(ENABLE_CHRONO "Enable the Chrono Engine library" ON)
 
@@ -91,17 +92,18 @@ endif()
 #------------------------------------------------------------------
 # Binaries
 #------------------------------------------------------------------
-set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../../bin/${PLATFORM}) # Generic output directory
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../../bin/${ENABLE_ASCENT}/${PLATFORM}) # Generic output directory
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})         # Release output directory
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})           # Debug output directory
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   add_executable(DualSPHysics5.2CPU_linux64 ${OBJXML} ${OBJSPHMOTION} ${OBCOMMON} ${OBCOMMONDSPH} ${OBSPH} ${OBSPHSINGLE} ${OBWAVERZ} ${OBCHRONO} ${OBMOORDYN} ${OBINOUT} ${OBMDBC})
-  install(TARGETS	DualSPHysics5.2CPU_linux64 DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+  install(TARGETS DualSPHysics5.2CPU_linux64 DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
   if (CUDA_FOUND)
     cuda_add_executable(DualSPHysics5.2_linux64 ${OBJXML} ${OBJSPHMOTION} ${OBCOMMON} ${OBCOMMONDSPH} ${OBSPH} ${OBSPHSINGLE} ${OBCOMMONGPU} ${OBSPHGPU} ${OBSPHSINGLEGPU} ${OBCUDA} ${OBWAVERZ} ${OBWAVERZCUDA} ${OBCHRONO} ${OBMOORDYN} ${OBINOUT} ${OBINOUTGPU} ${OBMDBC})
     install(TARGETS DualSPHysics5.2_linux64 DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
   endif(CUDA_FOUND)
+
 elseif(MSVC) 
   add_executable(DualSPHysics5.2CPU_win64 ${OBJXML} ${OBJSPHMOTION} ${OBCOMMON} ${OBCOMMONDSPH} ${OBSPH} ${OBSPHSINGLE} ${OBWAVERZ} ${OBCHRONO} ${OBMOORDYN} ${OBINOUT} ${OBMDBC})
   install(TARGETS	DualSPHysics5.2CPU_win64 DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
@@ -109,6 +111,7 @@ elseif(MSVC)
     cuda_add_executable(DualSPHysics5.2_win64 ${OBJXML} ${OBJSPHMOTION} ${OBCOMMON} ${OBCOMMONDSPH} ${OBSPH} ${OBSPHSINGLE} ${OBCOMMONGPU} ${OBSPHGPU} ${OBSPHSINGLEGPU} ${OBCUDA} ${OBWAVERZ} ${OBWAVERZCUDA} ${OBCHRONO} ${OBMOORDYN} ${OBINOUT} ${OBINOUTGPU} ${OBMDBC})
     install(TARGETS DualSPHysics5.2_win64 DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
   endif(CUDA_FOUND)
+
 endif()
 
 foreach(OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES} )
@@ -121,7 +124,13 @@ endforeach(OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES )
 #------------------------------------------------------------------
 set(LINKER_FLAGS "")
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  set(LINKER_FLAGS ${LINKER_FLAGS} jvtklib_64 jwavegen_64 jnumexlib_64)
+  if(ENABLE_ASCENT)
+    message(STATUS "ASCENT Enabled")
+    find_package(Ascent REQUIRED)
+    set(LINKER_FLAGS ${LINKER_FLAGS} jvtklib_64 jwavegen_64 jnumexlib_64 ascent::ascent)
+  else()
+    set(LINKER_FLAGS ${LINKER_FLAGS} jvtklib_64 jwavegen_64 jnumexlib_64)
+  endif(ENABLE_ASCENT)
 elseif(MSVC) 
   set(LINKER_FLAGS ${LINKER_FLAGS} LibJVtkLib_x64_v143_Release LibJWaveGen_x64_v143_Release LibJNumexLib_x64_v143_Release)
 endif()
@@ -160,7 +169,11 @@ endif(ENABLE_CHRONO)
 #------------------------------------------------------------------
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   target_link_libraries(DualSPHysics5.2CPU_linux64 ${LINKER_FLAGS})
-  set_target_properties(DualSPHysics5.2CPU_linux64 PROPERTIES COMPILE_FLAGS "-use_fast_math -O3 -fPIC -std=c++0x")
+  if(ENABLE_ASCENT)
+      set_target_properties(DualSPHysics5.2CPU_linux64 PROPERTIES COMPILE_FLAGS "-use_fast_math -O3 -fPIC -std=c++0x -D_WITH_ASCENT")
+  else()  
+    set_target_properties(DualSPHysics5.2CPU_linux64 PROPERTIES COMPILE_FLAGS "-use_fast_math -O3 -fPIC -std=c++0x")
+  endif(ENABLE_ASCENT)
   
   if (CUDA_FOUND)
     target_link_libraries(DualSPHysics5.2_linux64 ${LINKER_FLAGS})

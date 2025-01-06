@@ -64,6 +64,15 @@
 #include "JVtkLib.h"
 #include "JNumexLib.h"
 #include "JCaseUserVars.h"
+
+//{{{ ascent cscs
+//#ifdef _WITH_ASCENT
+#include "insitu_viz.h"
+//#include <ascent.hpp>
+//#include <conduit_blueprint.hpp>
+//#endif
+//}}}
+
 #include <algorithm>
 
 using namespace std;
@@ -2654,10 +2663,17 @@ void JSph::SavePartData(unsigned npok,unsigned nout,const JDataArrays& arrays
     delete[] posf3;
   }
 
-  //-Stores VTK nd/or CSV files.
+  //-Stores VTK and/or CSV files.
   if((SvData&SDAT_Csv) || (SvData&SDAT_Vtk)){
     JDataArrays arrays2;
     arrays2.CopyFrom(arrays);
+#ifdef _WITH_ASCENT
+    if (! TimeStep > 0) {
+        //std::cout << "# ------ TimeStep=" << TimeStep << "\n";
+    //} else {
+        viz::init_ascent();
+    }
+#endif
 
     string err;
     if(!(err=arrays2.CheckErrorArray("Pos" ,TypeDouble3,npok)).empty())Run_Exceptioon(err);
@@ -2679,6 +2695,37 @@ void JSph::SavePartData(unsigned npok,unsigned nout,const JDataArrays& arrays
     //-Defines fields to be stored.
     if(SvData&SDAT_Vtk){
       JVtkLib::SaveVtkData(DirDataOut+fun::FileNameSec("PartVtk.vtk",Part),arrays2,"Pos");
+      // cscs printf("# ------ TimeStep=%f\n", TimeStep);
+// {{{ test
+      //JDataArrays dataArray;
+      //dataArray.ptr = malloc(sizeof(int) * 5); // Example of allocating an array of 5 integers
+      //OK! tfloat3* f3Ptr = static_cast<tfloat3*>(arrays2.Arrays[0].ptr); // KEEP!
+/*
+      //for (unsigned i = 0; i < dataArray.count; ++i) {
+      for (unsigned i = 0; i < 4; ++i) {
+        std::cout << "## Elmt " << i 
+            << ":" << f3Ptr[i].x 
+            << ":" << f3Ptr[i].y
+            << ":" << f3Ptr[i].z 
+            << ":" << arrays2.Arrays[0].count
+            << std::endl;
+//## Elmnt 0:1e-05:0:-0.0005:12750
+//## Elmnt 1:3e-05:0:-0.0005:12750
+}
+*/
+// }}}
+//{{{ ascent
+#ifdef _WITH_ASCENT
+      //viz::init_ascent();
+      //viz::execute(TimeStep);
+      viz::execute(
+              arrays2,
+              //arrays2.Arrays[0].count,
+              TimeStep);
+      if ( (TimeMax - TimeStep) < .004) { viz::finalize(); }
+
+#endif
+//}}}
     }
     if(SvData&SDAT_Csv){ 
       JOutputCsv ocsv(AppInfo.GetCsvSepComa());
