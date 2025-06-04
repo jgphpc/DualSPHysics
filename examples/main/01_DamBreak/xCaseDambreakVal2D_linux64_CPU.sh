@@ -17,8 +17,8 @@ export diroutdata=${dirout}/data
 export dirbin=../../../bin/linux
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${dirbin}
 export gencase="${dirbin}/GenCase_linux64"
-export dualsphysicscpu="${dirbin}/DualSPHysics5.2CPU_linux64"
-export dualsphysicsgpu="${dirbin}/DualSPHysics5.2_linux64"
+export dualsphysicscpu="${dirbin}/DualSPHysics5.4CPU_linux64"
+export dualsphysicsgpu="${dirbin}/DualSPHysics5.4_linux64"
 export boundaryvtk="${dirbin}/BoundaryVTK_linux64"
 export partvtk="${dirbin}/PartVTK_linux64"
 export partvtkout="${dirbin}/PartVTKOut_linux64"
@@ -56,7 +56,7 @@ ${gencase} ${name}_Def ${dirout}/${name} -save:all
 if [ $? -ne 0 ] ; then fail; fi
 
 # Executes DualSPHysics to simulate SPH method.
-${dualsphysicscpu} ${dirout}/${name} ${dirout} -dirdataout data -svres
+${dualsphysicscpu} ${dirout}/${name} ${dirout}
 if [ $? -ne 0 ] ; then fail; fi
 
 fi
@@ -64,37 +64,37 @@ fi
 if [ $option -eq 2 -o $option -eq 1 ]; then
 # Executes PartVTK to create VTK files with particles.
 export dirout2=${dirout}/particles
-${partvtk} -dirin ${diroutdata} -savevtk ${dirout2}/PartFluid -onlytype:-all,fluid -vars:+idp,+vel,+rhop,+press,+vor,+energy
+${partvtk} -dirdata ${diroutdata} -savevtk ${dirout2}/PartFluid -onlytype:-all,fluid -vars:+idp,+vel,+rhop,+press,+vor,+energy
 if [ $? -ne 0 ] ; then fail; fi
 
-${partvtk} -dirin ${diroutdata} -savevtk ${dirout2}/PartBound -onlytype:-all,bound -vars:-all -last:0
+${partvtk} -dirdata ${diroutdata} -savevtk ${dirout2}/PartBound -onlytype:-all,bound -vars:-all -last:0
 if [ $? -ne 0 ] ; then fail; fi
 
 # Executes PartVTKOut to create VTK files with excluded particles.
-# ${partvtkout} -dirin ${diroutdata} -savevtk ${dirout2}/PartFluidOut -SaveResume ${dirout2}/_ResumeFluidOut
-# if [ $? -ne 0 ] ; then fail; fi
+${partvtkout} -dirdata ${diroutdata} -savevtk ${dirout2}/PartFluidOut -SaveResume ${dirout2}/_ResumeFluidOut
+if [ $? -ne 0 ] ; then fail; fi
 
 # Executes PartVTK to create CSV with energy values.
-${partvtk} -dirin ${diroutdata} -saveenergy ${dirout}/Energy -last:90
+${partvtk} -dirdata ${diroutdata} -saveenergy ${dirout}/Energy -last:90
 if [ $? -ne 0 ] ; then fail; fi
 
 # Executes TracerParts to create VTK files with trajectory of some fluid particles.
-# export dirout2=${dirout}/tracer
-# ${tracerparts} -dirin ${diroutdata} -savevtk ${dirout2}/BorderParts -onlytype:-all,+fluid -nearpartsdist:0.02 -nearpartsdef:pt=0.1:0:0.1,pt=0.15:0:0.15,pt=0.2:0:0.2,ptels[x=1:0:1,z=0:0.05:2],ptels[x=0:0.05:1,z=2:0:2] -tailsize:200
-# if [ $? -ne 0 ] ; then fail; fi
+export dirout2=${dirout}/tracer
+${tracerparts} -dirdata ${diroutdata} -savevtk ${dirout2}/BorderParts -onlytype:-all,+fluid -nearpartsdist:0.02 -nearpartsdef:pt=0.1:0:0.1,pt=0.15:0:0.15,pt=0.2:0:0.2,ptels[x=1:0:1,z=0:0.05:2],ptels[x=0:0.05:1,z=2:0:2] -tailsize:200
+if [ $? -ne 0 ] ; then fail; fi
 
 # Executes MeasureTool to create VTK and CSV files with elevation at each simulation time.
 export dirout2=${dirout}/measuretool
-${measuretool} -dirin ${diroutdata} -pointsdef:ptels[x=0.2:0:0.2,y=0:0:0,z=0:0.02:2.1] -onlytype:-all,+fluid -elevation -savevtk ${dirout2}/EtaPoints -savecsv ${dirout}/MeasuredA
+${measuretool} -dirdata ${diroutdata} -pointsdef:ptels[x=0.2:0:0.2,y=0:0:0,z=0:0.02:2.1] -onlytype:-all,+fluid -elevation -savevtk ${dirout2}/EtaPoints -savecsv ${dirout}/MeasuredA
 if [ $? -ne 0 ] ; then fail; fi
 
 # Executes MeasureTool to create VTK and CSV files with velocity and pressure at 2 points.
-${measuretool} -dirin ${diroutdata} -pointsdef:pt=0.2:0:0.2,pt=0.4:0:0.2 -onlytype:-all,+fluid -vars:-all,vel,press -savevtk ${dirout2}/CheckPoints -savecsv ${dirout}/MeasuredB
+${measuretool} -dirdata ${diroutdata} -pointsdef:pt=0.2:0:0.2,pt=0.4:0:0.2 -onlytype:-all,+fluid -vars:-all,vel,press -savevtk ${dirout2}/CheckPoints -savecsv ${dirout}/MeasuredB
 if [ $? -ne 0 ] ; then fail; fi
 
 # Executes IsoSurface to create VTK files with slices of surface.
 export dirout2=${dirout}/surface
-${isosurface} -dirin ${diroutdata} -saveslice ${dirout2}/Slices 
+${isosurface} -dirdata ${diroutdata} -saveslice ${dirout2}/Slices 
 if [ $? -ne 0 ] ; then fail; fi
 
 fi
