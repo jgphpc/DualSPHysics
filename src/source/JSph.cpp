@@ -3162,11 +3162,38 @@ void JSph::SavePartData(unsigned npsave,unsigned nout,const JDataArrays& arrays
   if((SvData&SDAT_Csv) || (SvData&SDAT_Vtk)){
     JDataArrays arrays2;
     arrays2.CopyFrom(arrays);
-    //if (! TimeStep > 0) { viz::init_ascent(); } // ascent
-    //if (! TimeStep > 0) {
+
+    string err;
+    if(!(err=arrays2.CheckErrorArray("Pos" ,TypeDouble3,npsave)).empty())Run_Exceptioon(err);
+    if(!(err=arrays2.CheckErrorArray("Idp" ,TypeUint   ,npsave)).empty())Run_Exceptioon(err);
+    const tdouble3* pos =arrays2.GetArrayDouble3("Pos");
+    const unsigned* idp =arrays2.GetArrayUint   ("Idp");
+    //-Generates array with posf3 and type of particle.
+    tfloat3* posf3=GetPointerDataFloat3(npsave,pos);
+    byte*    type=new byte[npsave];
+    for(unsigned p=0;p<npsave;p++){
+      const unsigned id=idp[p];
+      type[p]=(id>=CaseNbound? 3: (id<CaseNfixed? 0: (id<CaseNpb? 1: 2)));
+    }
+    arrays2.DeleteArray("Pos");
+    arrays2.AddArray("Pos",npsave,posf3);
+    arrays2.MoveArray(arrays2.Count()-1,0);
+    arrays2.AddArray("Type",npsave,type);
+    arrays2.MoveArray(arrays2.Count()-1,4);
+    //-Defines fields to be stored.
+    if(SvData&SDAT_Vtk){
+      JSpVtkData::Save(DirVtkOut+fun::FileNameSec("PartVtk.vtk",Part),arrays2,"Pos");
+      printf("# ------ TimeStep=%f\n", TimeStep); // ascent
+    }
+    if(SvData&SDAT_Csv){ 
+      JOutputCsv ocsv(AppInfo.GetCsvSepComa());
+      ocsv.SaveCsv(DirDataOut+fun::FileNameSec("PartCsv.csv",Part),arrays2);
+    }
+    // {{{ ASCENT
     // OMP_NUM_THREADS=32 ./DualSPHysics5.4CPU_linux64 CaseDambreak_out/CaseDambreak CaseDambreak_out -sv:vtk
     if (TimeStep >= 0.02) {
-        std::cout << "TimeStep:" << TimeStep << ascent::about() << std::endl; // ascent
+        std::cout << "TimeStep: " << TimeStep << std::endl; // ascent
+        std::cout << "Ascent Info: " << ascent::about() << std::endl; // ascent
         Node mymesh;
         //conduit::blueprint::mesh::examples::braid("hexs", 5, 5, 5, mymesh);
         Ascent myascent;
@@ -3218,6 +3245,13 @@ void JSph::SavePartData(unsigned npsave,unsigned nout,const JDataArrays& arrays
         // [3] Rhop TypeFloat
         // [4] Type TypeUchar
         // pos3_vec <-- std::vector(arrays2.Arrays[0])
+        // This line is casting a raw pointer (arrays2.Arrays[0].ptr) to a
+        // pointer of type const tfloat3*. The arrays2.Arrays[0] presumably
+        // contains positional data in memory, and tfloat3 represents a 3D
+        // vector structure (likely with x, y, and z float components). The
+        // reinterpret cast allows the program to treat the raw memory as an
+        // array of tfloat3 objects, enabling easier manipulation of spatial
+        // data for further processing.
         const tfloat3* pos3_ptr = reinterpret_cast<const tfloat3*>(arrays2.Arrays[0].ptr);
         std::vector<tfloat3> pos3_vec(pos3_ptr, pos3_ptr + array2_count);
         // NOTE: when a std::vector goes out of scope, its destructor is called,
@@ -3229,7 +3263,18 @@ void JSph::SavePartData(unsigned npsave,unsigned nout,const JDataArrays& arrays
                        [](const tfloat3& pos) { return pos.x; });
 
         // pos3_vec_y <-- pos3_vec.y
+        // This line creates a new std::vector<float> named pos3_vec_y with a
+        // size equal to the size of the pos3_vec vector. It initializes the
+        // vector to prepare for storing the y component values of the tfloat3
+        // elements contained in pos3_vec.
         std::vector<float> pos3_vec_y(pos3_vec.size());
+//         This line fills the vector pos3_vec_y with the y-coordinates from each element of pos3_vec.
+//         - pos3_vec is a std::vector<tfloat3>, where each tfloat3 presumably represents a 3D point with x, y, and z members.
+//         - pos3_vec_y is a std::vector<float> created to store the y-components.
+//         std::transform iterates over pos3_vec, applies the lambda [](const tfloat3& pos) { return pos.y; } 
+//         to each element (extracting the y value), and stores the result in the corresponding position in pos3_vec_y.
+//         Summary: This line extracts the y values from a vector of 3D positions and
+//                  stores them in a separate float vector.
         std::transform(pos3_vec.begin(), pos3_vec.end(), pos3_vec_y.begin(),
                        [](const tfloat3& pos) { return pos.y; });
 
@@ -3328,33 +3373,8 @@ void JSph::SavePartData(unsigned npsave,unsigned nout,const JDataArrays& arrays
           - "rhop"
         */  
     }
+    //}}}
 
-    string err;
-    if(!(err=arrays2.CheckErrorArray("Pos" ,TypeDouble3,npsave)).empty())Run_Exceptioon(err);
-    if(!(err=arrays2.CheckErrorArray("Idp" ,TypeUint   ,npsave)).empty())Run_Exceptioon(err);
-    const tdouble3* pos =arrays2.GetArrayDouble3("Pos");
-    const unsigned* idp =arrays2.GetArrayUint   ("Idp");
-    //-Generates array with posf3 and type of particle.
-    tfloat3* posf3=GetPointerDataFloat3(npsave,pos);
-    byte*    type=new byte[npsave];
-    for(unsigned p=0;p<npsave;p++){
-      const unsigned id=idp[p];
-      type[p]=(id>=CaseNbound? 3: (id<CaseNfixed? 0: (id<CaseNpb? 1: 2)));
-    }
-    arrays2.DeleteArray("Pos");
-    arrays2.AddArray("Pos",npsave,posf3);
-    arrays2.MoveArray(arrays2.Count()-1,0);
-    arrays2.AddArray("Type",npsave,type);
-    arrays2.MoveArray(arrays2.Count()-1,4);
-    //-Defines fields to be stored.
-    if(SvData&SDAT_Vtk){
-      JSpVtkData::Save(DirVtkOut+fun::FileNameSec("PartVtk.vtk",Part),arrays2,"Pos");
-      printf("# ------ TimeStep=%f\n", TimeStep); // ascent
-    }
-    if(SvData&SDAT_Csv){ 
-      JOutputCsv ocsv(AppInfo.GetCsvSepComa());
-      ocsv.SaveCsv(DirDataOut+fun::FileNameSec("PartCsv.csv",Part),arrays2);
-    }
     //-Deallocate of memory.
     delete[] posf3;
     delete[] type; 
