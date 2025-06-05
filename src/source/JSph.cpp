@@ -73,6 +73,7 @@
 #include <numeric>
 #include "ascent.hpp" // ascent
 #include "conduit_blueprint.hpp" // ascent
+typedef conduit::Node ConduitNode;
 using namespace ascent; // ascent
 using namespace conduit; // ascent
 
@@ -3168,7 +3169,17 @@ void JSph::SavePartData(unsigned npsave,unsigned nout,const JDataArrays& arrays
         Node mymesh;
         //conduit::blueprint::mesh::examples::braid("hexs", 5, 5, 5, mymesh);
         Ascent myascent;
-        myascent.open();
+        // options
+        ConduitNode ascent_options;
+        //ascent_options["default_dir"] = output_path;
+        //ascent_options["mpi_comm"] = MPI_Comm_c2f(MPI_COMM_WORLD);
+        ascent_options["ascent_info"] = "verbose";
+        ascent_options["exceptions"] = "forward";
+//#ifdef CAMP_HAVE_CUDA
+//        ascent_options["runtime/vtkm/backend"] = "cuda";
+//#endif
+        myascent.open(ascent_options);
+        // mesh
         //mesh["state/cycle"].set_external(&sim->iteration);
         //mesh["state/time"].set_external(&sim->time);
         mymesh["state/cycle"].set(TimeStep); // double
@@ -3262,6 +3273,10 @@ void JSph::SavePartData(unsigned npsave,unsigned nout,const JDataArrays& arrays
         myscenes["s1/plots/p1/field"] = "rhop";
         std::cout << myactions.to_yaml() << std::endl;
         myascent.execute(myactions);
+        string trigger_file = conduit::utils::join_file_path("./","simple_trigger_actions.yaml");
+        conduit::utils::remove_path_if_exists(trigger_file);
+        std::cout << myactions.to_yaml() << std::endl;
+        myactions.save(trigger_file);
         //
         myascent.close();
         /*
