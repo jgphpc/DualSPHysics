@@ -64,6 +64,7 @@ Please download source files and documentation from <a href="http://dual.sphysic
     #include "JSphGpuSingle_VRes.h"
   #endif
 #endif
+#include "mpi.h"
 
 #pragma warning(disable : 4996) //Cancels sprintf() deprecated.
 
@@ -161,6 +162,10 @@ void PrintExceptionLog(const std::string& prefix,const std::string& text
 //==============================================================================
 int main(int argc, char** argv){
   int errcode=1;
+  int cscs_rank=0, cscs_size=1;
+  MPI_Init(&argc, &argv);
+  MPI_Comm_rank(MPI_COMM_WORLD, &cscs_rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &cscs_size);
 
   //AppInfo.AddNameExtra("SaveFtAce");
   #ifdef CODE_SIZE4
@@ -243,6 +248,7 @@ int main(int argc, char** argv){
   if(log && log->IsOk())log->PrintFile(fun::PrintStr("\nFinished execution (code=%d).\n",errcode),true);
   printf("\nFinished execution (code=%d).\n",errcode);
   fflush(stdout);
+  MPI_Finalize();
   return(errcode);
 }
 

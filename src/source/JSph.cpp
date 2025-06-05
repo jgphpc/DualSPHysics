@@ -71,6 +71,7 @@
 
 //#include "insitu_viz.h" // ascent
 #include <numeric>
+#include "mpi.h"
 #include "ascent.hpp" // ascent
 #include "conduit_blueprint.hpp" // ascent
 typedef conduit::Node ConduitNode;
@@ -3164,15 +3165,30 @@ void JSph::SavePartData(unsigned npsave,unsigned nout,const JDataArrays& arrays
     //if (! TimeStep > 0) { viz::init_ascent(); } // ascent
     //if (! TimeStep > 0) {
     // OMP_NUM_THREADS=32 ./DualSPHysics5.4CPU_linux64 CaseDambreak_out/CaseDambreak CaseDambreak_out -sv:vtk
-    if (TimeStep >= 0.04) {
+    if (TimeStep >= 0.02) {
         std::cout << "TimeStep:" << TimeStep << ascent::about() << std::endl; // ascent
         Node mymesh;
         //conduit::blueprint::mesh::examples::braid("hexs", 5, 5, 5, mymesh);
         Ascent myascent;
+        // before we start...
+        ConduitNode ascent_info_node;
+        ascent::about(ascent_info_node);
+        // only run this test if ascent was built with vtkm support
+        if(ascent_info_node["runtimes/ascent/vtkm/status"].as_string() == "disabled")
+        {
+            ASCENT_INFO("Ascent vtkm support disabled, skipping test");
+            return;
+        }
+        string output_path = "ascent_out/";
+        ASCENT_INFO("Creating output folder: " + output_path);
+        if(!conduit::utils::is_directory(output_path))
+        {
+            conduit::utils::create_directory(output_path);
+        }
         // options
         ConduitNode ascent_options;
-        //ascent_options["default_dir"] = output_path;
-        //ascent_options["mpi_comm"] = MPI_Comm_c2f(MPI_COMM_WORLD);
+        ascent_options["default_dir"] = output_path;
+        ascent_options["mpi_comm"] = MPI_Comm_c2f(MPI_COMM_WORLD);
         ascent_options["ascent_info"] = "verbose";
         ascent_options["exceptions"] = "forward";
 //#ifdef CAMP_HAVE_CUDA
@@ -3204,20 +3220,24 @@ void JSph::SavePartData(unsigned npsave,unsigned nout,const JDataArrays& arrays
         // pos3_vec <-- std::vector(arrays2.Arrays[0])
         const tfloat3* pos3_ptr = reinterpret_cast<const tfloat3*>(arrays2.Arrays[0].ptr);
         std::vector<tfloat3> pos3_vec(pos3_ptr, pos3_ptr + array2_count);
+        // NOTE: when a std::vector goes out of scope, its destructor is called,
+        // and the allocated memory is freed.
+
         // pos3_vec_x <-- pos3_vec.x
         std::vector<float> pos3_vec_x(pos3_vec.size());
         std::transform(pos3_vec.begin(), pos3_vec.end(), pos3_vec_x.begin(),
                        [](const tfloat3& pos) { return pos.x; });
-        // NOTE: when a std::vector goes out of scope, its destructor is called,
-        // and the allocated memory is freed.
+
         // pos3_vec_y <-- pos3_vec.y
         std::vector<float> pos3_vec_y(pos3_vec.size());
         std::transform(pos3_vec.begin(), pos3_vec.end(), pos3_vec_y.begin(),
                        [](const tfloat3& pos) { return pos.y; });
+
         // pos3_vec_z <-- pos3_vec.z
         std::vector<float> pos3_vec_z(pos3_vec.size());
         std::transform(pos3_vec.begin(), pos3_vec.end(), pos3_vec_z.begin(),
                        [](const tfloat3& pos) { return pos.z; });
+
         // rhop_vec <-- std::vector(arrays2.Arrays[3])
         const float* rhop_ptr = reinterpret_cast<const float*>(arrays2.Arrays[3].ptr);
         std::vector<float> rhop_vec(rhop_ptr, rhop_ptr + array2_count);
@@ -3228,14 +3248,6 @@ void JSph::SavePartData(unsigned npsave,unsigned nout,const JDataArrays& arrays
         mymesh["coordsets/coords/values/y"].set(pos3_vec_y);
         mymesh["coordsets/coords/values/z"].set(pos3_vec_z);
         // then the variables...
-
-        // jf
-// 24     mymesh["fields/" + name + "/association"] = "vertex";
-// 25     mymesh["fields/" + name + "/topology"]    = "mesh";
-// 26     mymesh["fields/" + name + "/values"].set_external(field, N); // or strided
-// 27     mymesh["fields/" + name + "/volume_dependent"].set("false");
-
-        // jg
         //? mymesh["topologies/mesh/type"] = "points";
         //? mymesh["topologies/mesh/coordset"] = "coords";
         // x
@@ -3271,11 +3283,24 @@ void JSph::SavePartData(unsigned npsave,unsigned nout,const JDataArrays& arrays
         Node &myscenes = add_act["scenes"];
         myscenes["s1/plots/p1/type"] = "pseudocolor";
         myscenes["s1/plots/p1/field"] = "rhop";
+        myscenes["s1/plots/p1/color_table/name"] = "Yellow - Gray - Blue";
+        myscenes["s1/plots/p1/color_table/annotation"] = "true";
+        // dump field for debug
+        ConduitNode extracts;
+        extracts["e1/type"]  = "relay";
+        extracts["e1/params/path"] = output_path + "dump"; //FileName.c_str();
+        extracts["e1/params/protocol"] = "blueprint/mesh/hdf5";
+        //extracts["e1/params/fields"].append() = "rho";
+        extracts["e1/params/fields"].append() = "rhop";
+        ConduitNode &add_ext= myactions.append();
+        add_ext["action"] = "add_extracts";
+        add_ext["extracts"] = extracts;
+        //
         std::cout << myactions.to_yaml() << std::endl;
-        myascent.execute(myactions);
         string trigger_file = conduit::utils::join_file_path("./","simple_trigger_actions.yaml");
         conduit::utils::remove_path_if_exists(trigger_file);
-        std::cout << myactions.to_yaml() << std::endl;
+        //
+        myascent.execute(myactions);
         myactions.save(trigger_file);
         //
         myascent.close();
@@ -3287,7 +3312,20 @@ void JSph::SavePartData(unsigned npsave,unsigned nout,const JDataArrays& arrays
       plots:
         p1:
           type: "pseudocolor"
-          field: "braid"
+          field: "rhop"
+          color_table:
+            name: "Yellow - Gray - Blue"
+            annotation: "true"
+-
+  action: "add_extracts"
+  extracts:
+    e1:
+      type: "relay"
+      params:
+        path: "ascent_out/dump"
+        protocol: "blueprint/mesh/hdf5"
+        fields:
+          - "rhop"
         */  
     }
 
