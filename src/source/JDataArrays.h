@@ -74,7 +74,8 @@ public:
     bool delptr;          ///<Automatically frees memory in destructor or Reset() method.
   }StDataArray;
 
-protected:
+//protected:
+public:
   std::vector<StDataArray> Arrays;
 
   void FreeMemory(StDataArray& arr);
