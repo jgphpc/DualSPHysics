@@ -69,6 +69,13 @@
 #include "JSpVtkShape.h"
 #include <algorithm>
 
+//#include "insitu_viz.h" // ascent
+#include <numeric>
+#include "ascent.hpp" // ascent
+#include "conduit_blueprint.hpp" // ascent
+using namespace ascent; // ascent
+using namespace conduit; // ascent
+
 using namespace std;
 
 //==============================================================================
@@ -3153,6 +3160,121 @@ void JSph::SavePartData(unsigned npsave,unsigned nout,const JDataArrays& arrays
   if((SvData&SDAT_Csv) || (SvData&SDAT_Vtk)){
     JDataArrays arrays2;
     arrays2.CopyFrom(arrays);
+    //if (! TimeStep > 0) { viz::init_ascent(); } // ascent
+    //if (! TimeStep > 0) {
+    // OMP_NUM_THREADS=32 ./DualSPHysics5.4CPU_linux64 CaseDambreak_out/CaseDambreak CaseDambreak_out -sv:vtk
+    if (TimeStep >= 0.04) {
+        std::cout << "TimeStep:" << TimeStep << ascent::about() << std::endl; // ascent
+        Node mymesh;
+        //conduit::blueprint::mesh::examples::braid("hexs", 5, 5, 5, mymesh);
+        Ascent myascent;
+        myascent.open();
+        //mesh["state/cycle"].set_external(&sim->iteration);
+        //mesh["state/time"].set_external(&sim->time);
+        mymesh["state/cycle"].set(TimeStep); // double
+        mymesh["state/time"].set(TimeStep); // double
+        //mymesh["state/domain_id"].set_external(&sim->par_rank);
+        mymesh["coordsets/coords/type"] = "explicit";
+        mymesh["topologies/mesh/coordset"] = "coords";
+        // CONNECTIVITY_LIST
+        long array2_count = arrays2.Arrays[0].count;
+        mymesh["topologies/mesh/type"] = "unstructured";
+        std::vector<conduit_int32> conn(array2_count);
+        std::iota(conn.begin(), conn.end(), 0);
+        mymesh["topologies/mesh/elements/connectivity"].set(conn);
+        mymesh["topologies/mesh/elements/shape"] = "point";
+
+//{{{ rearrange data
+        // [0] Pos  TypeFloat3
+        // [1] Idp  TypeUint
+        // [2] Vel  TypeFloat3
+        // [3] Rhop TypeFloat
+        // [4] Type TypeUchar
+        // pos3_vec <-- std::vector(arrays2.Arrays[0])
+        const tfloat3* pos3_ptr = reinterpret_cast<const tfloat3*>(arrays2.Arrays[0].ptr);
+        std::vector<tfloat3> pos3_vec(pos3_ptr, pos3_ptr + array2_count);
+        // pos3_vec_x <-- pos3_vec.x
+        std::vector<float> pos3_vec_x(pos3_vec.size());
+        std::transform(pos3_vec.begin(), pos3_vec.end(), pos3_vec_x.begin(),
+                       [](const tfloat3& pos) { return pos.x; });
+        // NOTE: when a std::vector goes out of scope, its destructor is called,
+        // and the allocated memory is freed.
+        // pos3_vec_y <-- pos3_vec.y
+        std::vector<float> pos3_vec_y(pos3_vec.size());
+        std::transform(pos3_vec.begin(), pos3_vec.end(), pos3_vec_y.begin(),
+                       [](const tfloat3& pos) { return pos.y; });
+        // pos3_vec_z <-- pos3_vec.z
+        std::vector<float> pos3_vec_z(pos3_vec.size());
+        std::transform(pos3_vec.begin(), pos3_vec.end(), pos3_vec_z.begin(),
+                       [](const tfloat3& pos) { return pos.z; });
+        // rhop_vec <-- std::vector(arrays2.Arrays[3])
+        const float* rhop_ptr = reinterpret_cast<const float*>(arrays2.Arrays[3].ptr);
+        std::vector<float> rhop_vec(rhop_ptr, rhop_ptr + array2_count);
+//}}}
+
+        // first the coordinates...
+        mymesh["coordsets/coords/values/x"].set(pos3_vec_x); // set_external ?
+        mymesh["coordsets/coords/values/y"].set(pos3_vec_y);
+        mymesh["coordsets/coords/values/z"].set(pos3_vec_z);
+        // then the variables...
+
+        // jf
+// 24     mymesh["fields/" + name + "/association"] = "vertex";
+// 25     mymesh["fields/" + name + "/topology"]    = "mesh";
+// 26     mymesh["fields/" + name + "/values"].set_external(field, N); // or strided
+// 27     mymesh["fields/" + name + "/volume_dependent"].set("false");
+
+        // jg
+        //? mymesh["topologies/mesh/type"] = "points";
+        //? mymesh["topologies/mesh/coordset"] = "coords";
+        // x
+        mymesh["fields/x/association"] = "vertex";
+        mymesh["fields/x/topology"] = "mesh";
+        mymesh["fields/x/values"].set(pos3_vec_x); // set_external(field, N); ? and strided ?
+        mymesh["fields/x/volume_dependent"].set("false");
+        // y
+        mymesh["fields/y/association"] = "vertex";
+        mymesh["fields/y/topology"] = "mesh";
+        mymesh["fields/y/values"].set(pos3_vec_y); // set_external(field, N); ? and strided ?
+        mymesh["fields/y/volume_dependent"].set("false");
+        // z
+        mymesh["fields/z/association"] = "vertex";
+        mymesh["fields/z/topology"] = "mesh";
+        mymesh["fields/z/values"].set(pos3_vec_z); // set_external(field, N); ? and strided ?
+        mymesh["fields/z/volume_dependent"].set("false");
+        // rho
+        mymesh["fields/rhop/association"] = "vertex";
+        mymesh["fields/rhop/topology"] = "mesh";
+        mymesh["fields/rhop/values"].set(rhop_vec); // set_external(field, N); ? and strided ?
+        mymesh["fields/rhop/volume_dependent"].set("false");
+        // verify
+        conduit::Node verify_info;
+        if (!conduit::blueprint::mesh::verify(mymesh, verify_info)) {
+            CONDUIT_INFO("blueprint verify failed!" + verify_info.to_json());
+        }
+        myascent.publish(mymesh);
+        // actions
+        Node myactions;
+        Node &add_act = myactions.append();
+        add_act["action"] = "add_scenes";
+        Node &myscenes = add_act["scenes"];
+        myscenes["s1/plots/p1/type"] = "pseudocolor";
+        myscenes["s1/plots/p1/field"] = "rhop";
+        std::cout << myactions.to_yaml() << std::endl;
+        myascent.execute(myactions);
+        //
+        myascent.close();
+        /*
+-
+  action: "add_scenes"
+  scenes:
+    s1:
+      plots:
+        p1:
+          type: "pseudocolor"
+          field: "braid"
+        */  
+    }
 
     string err;
     if(!(err=arrays2.CheckErrorArray("Pos" ,TypeDouble3,npsave)).empty())Run_Exceptioon(err);
@@ -3174,6 +3296,7 @@ void JSph::SavePartData(unsigned npsave,unsigned nout,const JDataArrays& arrays
     //-Defines fields to be stored.
     if(SvData&SDAT_Vtk){
       JSpVtkData::Save(DirVtkOut+fun::FileNameSec("PartVtk.vtk",Part),arrays2,"Pos");
+      printf("# ------ TimeStep=%f\n", TimeStep); // ascent
     }
     if(SvData&SDAT_Csv){ 
       JOutputCsv ocsv(AppInfo.GetCsvSepComa());
