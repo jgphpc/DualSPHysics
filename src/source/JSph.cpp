@@ -3190,6 +3190,7 @@ void JSph::SavePartData(unsigned npsave,unsigned nout,const JDataArrays& arrays
       ocsv.SaveCsv(DirDataOut+fun::FileNameSec("PartCsv.csv",Part),arrays2);
     }
     // {{{ ASCENT
+    // CPATH=$AA:$BB:$CPATH cmake --build build -t DualSPHysics5.4CPU_linux64 -j
     // OMP_NUM_THREADS=32 ./DualSPHysics5.4CPU_linux64 CaseDambreak_out/CaseDambreak CaseDambreak_out -sv:vtk
     if (TimeStep >= 0.02) {
         std::cout << "TimeStep: " << TimeStep << std::endl; // ascent
@@ -3328,18 +3329,39 @@ void JSph::SavePartData(unsigned npsave,unsigned nout,const JDataArrays& arrays
         Node &myscenes = add_act["scenes"];
         myscenes["s1/plots/p1/type"] = "pseudocolor";
         myscenes["s1/plots/p1/field"] = "rhop";
-        myscenes["s1/plots/p1/color_table/name"] = "Yellow - Gray - Blue";
+        //OK myscenes["s1/plots/p1/color_table/name"] = "Yellow - Gray - Blue";
         myscenes["s1/plots/p1/color_table/annotation"] = "true";
-        // dump field for debug
-        ConduitNode extracts;
-        extracts["e1/type"]  = "relay";
-        extracts["e1/params/path"] = output_path + "dump"; //FileName.c_str();
-        extracts["e1/params/protocol"] = "blueprint/mesh/hdf5";
-        //extracts["e1/params/fields"].append() = "rho";
-        extracts["e1/params/fields"].append() = "rhop";
-        ConduitNode &add_ext= myactions.append();
-        add_ext["action"] = "add_extracts";
-        add_ext["extracts"] = extracts;
+        // adjust the view camera to make a nicer plot
+        // renderView1.CameraPosition
+        // renderView1.CameraViewUp
+        myscenes["s1/renders/r1/image_prefix"] = output_path + 'r'; //+ FileName + "_%04d";
+        myscenes["s1/renders/r1/camera/position"].set({0.7999999885796569, -3.1230805861473065, 0.226249999308493});
+        myscenes["s1/renders/r1/camera/up"].set({0.0, 0.0, 1.0});
+        myscenes["s1/renders/r1/bg_color"].set({1.,1.,1.});
+        myscenes["s1/renders/r1/fg_color"].set({0.,0.,0.});
+        //scenes["s1/renders/r1/camera/look_at"].set({0.5, 0.125, 0.125});
+        //scenes["s1/renders/r1/camera/azimuth"] = -??;
+        //scenes["s1/renders/r1/camera/elevation"] = ??;
+        //scenes["s1/renders/r1/camera/zoom"] = ??;
+//jf --rendering:
+//jf         scenes["s1/plots/p1/color_table/name"] = "viridis";
+//jf         scenes["s1/renders/r1/color_bar_position"].set({-0.9,0.9,0.8,0.85});
+//jf         scenes["s1/renders/r1/camera/azimuth"] = 30.0;
+//jf         scenes["s1/renders/r1/camera/elevation"] = 30.0;
+//jf         scenes["s1/renders/r1/image_prefix"] = output_path + FileName + "_%04d";
+//jf         scenes["s1/renders/r1/bg_color"].set({1.,1.,1.});
+//jf         scenes["s1/renders/r1/fg_color"].set({0.,0.,0.});
+        // --------------------------
+//         // save blueprint = dump field for debug
+//         ConduitNode extracts;
+//         extracts["e1/type"]  = "relay";
+//         extracts["e1/params/path"] = output_path + "dump"; //FileName.c_str();
+//         extracts["e1/params/protocol"] = "blueprint/mesh/hdf5";
+//         //extracts["e1/params/fields"].append() = "rho";
+//         extracts["e1/params/fields"].append() = "rhop";
+//         ConduitNode &add_ext= myactions.append();
+//         add_ext["action"] = "add_extracts";
+//         add_ext["extracts"] = extracts;
         //
         std::cout << myactions.to_yaml() << std::endl;
         string trigger_file = conduit::utils::join_file_path("./","simple_trigger_actions.yaml");
