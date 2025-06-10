@@ -3190,43 +3190,35 @@ void JSph::SavePartData(unsigned npsave,unsigned nout,const JDataArrays& arrays
       ocsv.SaveCsv(DirDataOut+fun::FileNameSec("PartCsv.csv",Part),arrays2);
     }
 
-//         //{{{ TEST pos3_vel <-- std::vector(arrays2.Arrays[2])
-//         long array2_count = arrays2.Arrays[2].count;
-//         const tfloat3* vel3_ptr = reinterpret_cast<const tfloat3*>(arrays2.Arrays[2].ptr);
-//         std::vector<tfloat3> vel3_vec(vel3_ptr, vel3_ptr + array2_count);
-//         // vel3_vec_vx <-- vel3_vec.x
-//         std::vector<float> vel3_vec_vx(vel3_vec.size());
-//         std::transform(vel3_vec.begin(), vel3_vec.end(), vel3_vec_vx.begin(),
-//                        [](const tfloat3& vel) { return vel.x; });
-//         //}}}
-
 //    if (false) {
     // {{{ ASCENT
     // us -v default insitu_ascent/develop_gcc13:1802669257@daint
     // cmake --build build+debug+ascent -t DualSPHysics5.4CPU_linux64
     // cp /capstor/scratch/cscs/piccinal/santis/sph/dualsph/DualSPHysics.git/bin/linux/DualSPHysics5.4CPU_linux64 cpu+debug+ascent
     // OMP_NUM_THREADS=32 ../cpu+debug+ascent CaseDambreak_0.02_0.0095/CaseDambreak CaseDambreak_0.02_0.0095 -sv:vtk
-    if (TimeStep >= 0.02) {
-        std::cout << "TimeStep: " << TimeStep << std::endl; // ascent
-        //{{{ verify + output path
-        std::cout << "Ascent Info: " << ascent::about() << std::endl; // ascent
+    // if (TimeStep >= 0.021) {
+    if (Part >= 2) {
+        //std::cout << "TimeStep: " << TimeStep << std::endl; // ascent
+        //{{{ info + verify + output dir
         Node mymesh;
-        //conduit::blueprint::mesh::examples::braid("hexs", 5, 5, 5, mymesh);
         Ascent myascent;
         // before we start...
-        ConduitNode ascent_info_node;
-        ascent::about(ascent_info_node);
-        // only run this test if ascent was built with vtkm support
-        if(ascent_info_node["runtimes/ascent/vtkm/status"].as_string() == "disabled")
-        {
-            ASCENT_INFO("Ascent vtkm support disabled, skipping test");
-            return;
-        }
         string output_path = "ascent_out";
-        ASCENT_INFO("Creating output folder: " + output_path);
-        if(!conduit::utils::is_directory(output_path))
-        {
-            conduit::utils::create_directory(output_path);
+        if (Part == 1) {
+            std::cout << "Ascent Info: " << ascent::about() << std::endl; // ascent
+            ConduitNode ascent_info_node;
+            ascent::about(ascent_info_node);
+            // only run this test if ascent was built with vtkm support
+            if(ascent_info_node["runtimes/ascent/vtkm/status"].as_string() == "disabled")
+            {
+                ASCENT_INFO("Ascent vtkm support disabled, skipping test");
+                return;
+            }
+            ASCENT_INFO("Creating output folder: " + output_path);
+            if(!conduit::utils::is_directory(output_path))
+            {
+                conduit::utils::create_directory(output_path);
+            }
         }
         //}}}
         // options
@@ -3446,7 +3438,10 @@ void JSph::SavePartData(unsigned npsave,unsigned nout,const JDataArrays& arrays
         myscenes["s1/plots/p2/color_table/annotation"] = "true";
         myscenes["s1/plots/p2/points/radius"] = 0.002;
         //
-        myscenes["s1/renders/r1/image_prefix"] = output_path + "/density.%05d";
+        //myscenes["s1/renders/r1/image_prefix"] = output_path + "/density.%05d";
+        //del std::string TimeStep_str = std::to_string(TimeStep);
+        char part_step[7]; snprintf(part_step, 7, "%06d", Part);
+        myscenes["s1/renders/r1/image_prefix"] = output_path + "/density-" + part_step + ".";
         myscenes["s1/renders/r1/image_width"] = 1920;
         myscenes["s1/renders/r1/image_height"] = 1080;
         myscenes["s1/renders/r1/camera/look_at"].set({1.3566178016938142, 1.3811721979632803, -0.24396172179603043});
@@ -3517,11 +3512,13 @@ void JSph::SavePartData(unsigned npsave,unsigned nout,const JDataArrays& arrays
         //}}}
         */
 
-        std::cout << myactions.to_yaml() << std::endl;
-        string trigger_file = conduit::utils::join_file_path("./","simple_trigger_actions.yaml");
-        conduit::utils::remove_path_if_exists(trigger_file);
+        if (Part == 2) {
+            std::cout << myactions.to_yaml() << std::endl;
+            string trigger_file = conduit::utils::join_file_path("./","simple_trigger_actions.yaml");
+            conduit::utils::remove_path_if_exists(trigger_file);
+            myactions.save(trigger_file);
+        }
         myascent.execute(myactions);
-        myactions.save(trigger_file);
         //
         myascent.close();
         /*
