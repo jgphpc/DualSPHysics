@@ -3183,17 +3183,32 @@ void JSph::SavePartData(unsigned npsave,unsigned nout,const JDataArrays& arrays
     //-Defines fields to be stored.
     if(SvData&SDAT_Vtk){
       JSpVtkData::Save(DirVtkOut+fun::FileNameSec("PartVtk.vtk",Part),arrays2,"Pos");
-      printf("# ------ TimeStep=%f\n", TimeStep); // ascent
+      // printf("# ------ TimeStep=%f\n", TimeStep); // ascent
     }
     if(SvData&SDAT_Csv){ 
       JOutputCsv ocsv(AppInfo.GetCsvSepComa());
       ocsv.SaveCsv(DirDataOut+fun::FileNameSec("PartCsv.csv",Part),arrays2);
     }
+
+//         //{{{ TEST pos3_vel <-- std::vector(arrays2.Arrays[2])
+//         long array2_count = arrays2.Arrays[2].count;
+//         const tfloat3* vel3_ptr = reinterpret_cast<const tfloat3*>(arrays2.Arrays[2].ptr);
+//         std::vector<tfloat3> vel3_vec(vel3_ptr, vel3_ptr + array2_count);
+//         // vel3_vec_vx <-- vel3_vec.x
+//         std::vector<float> vel3_vec_vx(vel3_vec.size());
+//         std::transform(vel3_vec.begin(), vel3_vec.end(), vel3_vec_vx.begin(),
+//                        [](const tfloat3& vel) { return vel.x; });
+//         //}}}
+
+//    if (false) {
     // {{{ ASCENT
-    // CPATH=$AA:$BB:$CPATH cmake --build build -t DualSPHysics5.4CPU_linux64 -j
-    // OMP_NUM_THREADS=32 ./DualSPHysics5.4CPU_linux64 CaseDambreak_out/CaseDambreak CaseDambreak_out -sv:vtk
+    // us -v default insitu_ascent/develop_gcc13:1802669257@daint
+    // cmake --build build+debug+ascent -t DualSPHysics5.4CPU_linux64
+    // cp /capstor/scratch/cscs/piccinal/santis/sph/dualsph/DualSPHysics.git/bin/linux/DualSPHysics5.4CPU_linux64 cpu+debug+ascent
+    // OMP_NUM_THREADS=32 ../cpu+debug+ascent CaseDambreak_0.02_0.0095/CaseDambreak CaseDambreak_0.02_0.0095 -sv:vtk
     if (TimeStep >= 0.02) {
         std::cout << "TimeStep: " << TimeStep << std::endl; // ascent
+        //{{{ verify + output path
         std::cout << "Ascent Info: " << ascent::about() << std::endl; // ascent
         Node mymesh;
         //conduit::blueprint::mesh::examples::braid("hexs", 5, 5, 5, mymesh);
@@ -3207,12 +3222,13 @@ void JSph::SavePartData(unsigned npsave,unsigned nout,const JDataArrays& arrays
             ASCENT_INFO("Ascent vtkm support disabled, skipping test");
             return;
         }
-        string output_path = "ascent_out/";
+        string output_path = "ascent_out";
         ASCENT_INFO("Creating output folder: " + output_path);
         if(!conduit::utils::is_directory(output_path))
         {
             conduit::utils::create_directory(output_path);
         }
+        //}}}
         // options
         ConduitNode ascent_options;
         ascent_options["default_dir"] = output_path;
@@ -3223,29 +3239,15 @@ void JSph::SavePartData(unsigned npsave,unsigned nout,const JDataArrays& arrays
 //        ascent_options["runtime/vtkm/backend"] = "cuda";
 //#endif
         myascent.open(ascent_options);
-        // mesh
-        //mesh["state/cycle"].set_external(&sim->iteration);
-        //mesh["state/time"].set_external(&sim->time);
-        mymesh["state/cycle"].set(TimeStep); // double
-        mymesh["state/time"].set(TimeStep); // double
-        //mymesh["state/domain_id"].set_external(&sim->par_rank);
-        mymesh["coordsets/coords/type"] = "explicit";
-        mymesh["topologies/mesh/coordset"] = "coords";
-        // CONNECTIVITY_LIST
-        long array2_count = arrays2.Arrays[0].count;
-        mymesh["topologies/mesh/type"] = "unstructured";
-        std::vector<conduit_int32> conn(array2_count);
-        std::iota(conn.begin(), conn.end(), 0);
-        mymesh["topologies/mesh/elements/connectivity"].set(conn);
-        mymesh["topologies/mesh/elements/shape"] = "point";
 
 //{{{ rearrange data
         // [0] Pos  TypeFloat3
         // [1] Idp  TypeUint
-        // [2] Vel  TypeFloat3
+        // [2] Vel  TypeFloat3 <--
         // [3] Rhop TypeFloat
         // [4] Type TypeUchar
-        // pos3_vec <-- std::vector(arrays2.Arrays[0])
+        long array2_count = arrays2.Arrays[0].count;
+        //{{{ pos3_vec <-- std::vector(arrays2.Arrays[0])
         // This line is casting a raw pointer (arrays2.Arrays[0].ptr) to a
         // pointer of type const tfloat3*. The arrays2.Arrays[0] presumably
         // contains positional data in memory, and tfloat3 represents a 3D
@@ -3258,6 +3260,7 @@ void JSph::SavePartData(unsigned npsave,unsigned nout,const JDataArrays& arrays
         // NOTE: when a std::vector goes out of scope, its destructor is called,
         // and the allocated memory is freed.
 
+        //{{{ x,y,z
         // pos3_vec_x <-- pos3_vec.x
         std::vector<float> pos3_vec_x(pos3_vec.size());
         std::transform(pos3_vec.begin(), pos3_vec.end(), pos3_vec_x.begin(),
@@ -3283,11 +3286,46 @@ void JSph::SavePartData(unsigned npsave,unsigned nout,const JDataArrays& arrays
         std::vector<float> pos3_vec_z(pos3_vec.size());
         std::transform(pos3_vec.begin(), pos3_vec.end(), pos3_vec_z.begin(),
                        [](const tfloat3& pos) { return pos.z; });
+        //}}}
+        //}}}
+        /*
+        //{{{ pos3_vel <-- std::vector(arrays2.Arrays[2])
+        const tfloat3* vel3_ptr = reinterpret_cast<const tfloat3*>(arrays2.Arrays[2].ptr);
+        std::vector<tfloat3> vel3_vec(vel3_ptr, vel3_ptr + array2_count);
+
+        // vel3_vec_vx <-- vel3_vec.x
+        std::vector<float> vel3_vec_vx(vel3_vec.size());
+        std::transform(vel3_vec.begin(), vel3_vec.end(), vel3_vec_vx.begin(),
+                       [](const tfloat3& vel) { return vel.x; });
+        // vel3_vec_vy <-- vel3_vec.y
+        std::vector<float> vel3_vec_vy(vel3_vec.size());
+        std::transform(vel3_vec.begin(), vel3_vec.end(), vel3_vec_vy.begin(),
+                       [](const tfloat3& vel) { return vel.y; });
+        // vel3_vec_vz <-- vel3_vec.z
+        std::vector<float> vel3_vec_vz(vel3_vec.size());
+        std::transform(vel3_vec.begin(), vel3_vec.end(), vel3_vec_vz.begin(),
+                       [](const tfloat3& vel) { return vel.z; });
+        //}}}
+        */
 
         // rhop_vec <-- std::vector(arrays2.Arrays[3])
         const float* rhop_ptr = reinterpret_cast<const float*>(arrays2.Arrays[3].ptr);
         std::vector<float> rhop_vec(rhop_ptr, rhop_ptr + array2_count);
 //}}}
+        //{{{ mymesh
+        //mesh["state/cycle"].set_external(&sim->iteration);
+        //mesh["state/time"].set_external(&sim->time);
+        mymesh["state/cycle"].set(TimeStep); // double
+        mymesh["state/time"].set(TimeStep); // double
+        //mymesh["state/domain_id"].set_external(&sim->par_rank);
+        mymesh["coordsets/coords/type"] = "explicit";
+        mymesh["topologies/mesh/coordset"] = "coords";
+        // CONNECTIVITY_LIST
+        mymesh["topologies/mesh/type"] = "unstructured";
+        std::vector<conduit_int32> conn(array2_count);
+        std::iota(conn.begin(), conn.end(), 0);
+        mymesh["topologies/mesh/elements/connectivity"].set(conn);
+        mymesh["topologies/mesh/elements/shape"] = "point";
 
         // first the coordinates...
         mymesh["coordsets/coords/values/x"].set(pos3_vec_x); // set_external ?
@@ -3311,24 +3349,137 @@ void JSph::SavePartData(unsigned npsave,unsigned nout,const JDataArrays& arrays
         mymesh["fields/z/topology"] = "mesh";
         mymesh["fields/z/values"].set(pos3_vec_z); // set_external(field, N); ? and strided ?
         mymesh["fields/z/volume_dependent"].set("false");
+       
+        /*
+        // vx
+        mymesh["fields/vx/association"] = "vertex";
+        mymesh["fields/vx/topology"] = "mesh";
+        mymesh["fields/vx/values"].set(vel3_vec_vx); // set_external(field, N); ? and strided ?
+        mymesh["fields/vx/volume_dependent"].set("false");
+        // vy
+        mymesh["fields/vy/association"] = "vertex";
+        mymesh["fields/vy/topology"] = "mesh";
+        mymesh["fields/vy/values"].set(vel3_vec_vy); // set_external(field, N); ? and strided ?
+        mymesh["fields/vy/volume_dependent"].set("false");
+        // vz
+        mymesh["fields/vz/association"] = "vertex";
+        mymesh["fields/vz/topology"] = "mesh";
+        mymesh["fields/vz/values"].set(vel3_vec_vz); // set_external(field, N); ? and strided ?
+        mymesh["fields/vz/volume_dependent"].set("false");
+        */
+        
         // rho
         mymesh["fields/rhop/association"] = "vertex";
         mymesh["fields/rhop/topology"] = "mesh";
         mymesh["fields/rhop/values"].set(rhop_vec); // set_external(field, N); ? and strided ?
         mymesh["fields/rhop/volume_dependent"].set("false");
-        // verify
+
+        // verify mymesh
         conduit::Node verify_info;
         if (!conduit::blueprint::mesh::verify(mymesh, verify_info)) {
             CONDUIT_INFO("blueprint verify failed!" + verify_info.to_json());
         }
+        //}}}
         myascent.publish(mymesh);
-        // actions
+
+        //{{{ --thresholding/clipping
+        /* //{{{ simple_trigger_actions.yaml
+-
+  action: "add_pipelines"
+  pipelines:
+    pl_threshold_thin_clip_y:
+      f1:
+        type: "threshold"
+        params:
+          field: "y"
+          min_value: 0.01
+          max_value: 1000
+-
+  action: "add_scenes"
+  scenes:
+    s1:
+      plots:
+        p2:
+          type: "pseudocolor"
+          field: "rhop"
+          pipeline: "pl_threshold_thin_clip_y"
+          min_value: 0
+          max_value: 2
+          color_table:
+            name: "Yellow - Gray - Blue"
+            annotation: "true"
+          points:
+            radius: 0.002
+      renders:
+        r1:
+          image_prefix: "ascent_out/density.%05d"
+          image_width: 1920
+          image_height: 1080
+          camera:
+            look_at: [1.35661780169381, 1.38117219796328, -0.24396172179603]
+            position: [-0.287688321338078, -1.45228141028134, 0.88710322932479]
+            up: [0.20434332985957, 0.258323616399011, 0.944199508977017]
+          bg_color: [1.0, 1.0, 1.0]
+          fg_color: [0.0, 0.0, 0.0]
+          dataset_bounds: [0.0, 1.0, 0.0, 0.25, 0.0, 0.25]
+          color_bar_position: [0.2, 0.9, -0.9, -0.75]
+          */
+        //}}}
+        Node myactions;
+        // mypipelines
+        ConduitNode mypipelines; // conduit::Node pipelines;
+        mypipelines["pl_threshold_thin_clip_y/f1/type"] = "threshold";
+        mypipelines["pl_threshold_thin_clip_y/f1/params/field"] = "y";
+        mypipelines["pl_threshold_thin_clip_y/f1/params/min_value"] = 0.01; // "min_rho + 0.25 * (max_rho - min_rho)";
+        mypipelines["pl_threshold_thin_clip_y/f1/params/max_value"] = 1000; // "max_rho - 0.25 * (max_rho - min_rho)";
+        ConduitNode &add_pip = myactions.append();
+        add_pip["action"] = "add_pipelines";
+        add_pip["pipelines"] = mypipelines;
+        // myscenes
+        ConduitNode myscenes;
+        myscenes["s1/plots/p2/type"] = "pseudocolor";
+        myscenes["s1/plots/p2/field"] = "rhop"; // "density";
+        myscenes["s1/plots/p2/pipeline"] = "pl_threshold_thin_clip_y";
+        myscenes["s1/plots/p2/min_value"] = 0;
+        myscenes["s1/plots/p2/max_value"] = 2;
+        myscenes["s1/plots/p2/color_table/name"] = "Yellow - Gray - Blue";
+        myscenes["s1/plots/p2/color_table/annotation"] = "true";
+        myscenes["s1/plots/p2/points/radius"] = 0.002;
+        //
+        myscenes["s1/renders/r1/image_prefix"] = output_path + "/density.%05d";
+        myscenes["s1/renders/r1/image_width"] = 1920;
+        myscenes["s1/renders/r1/image_height"] = 1080;
+        myscenes["s1/renders/r1/camera/look_at"].set({1.3566178016938142, 1.3811721979632803, -0.24396172179603043});
+        myscenes["s1/renders/r1/camera/position"].set({-0.2876883213380784, -1.4522814102813384, 0.88710322932479});
+        myscenes["s1/renders/r1/camera/up"].set({0.20434332985956988, 0.2583236163990108, 0.944199508977017});
+        myscenes["s1/renders/r1/camera/zoom"] = 2.25; // 5.25;
+        myscenes["s1/renders/r1/bg_color"].set({1.0, 1.0, 1.0});
+        myscenes["s1/renders/r1/fg_color"].set({0.0, 0.0, 0.0});
+        myscenes["s1/renders/r1/dataset_bounds"].set({0.0, 1.0, 0.0, 0.25, 0.0, 0.25});
+        myscenes["s1/renders/r1/color_bar_position"].set({0.2, 0.9, -0.9, -0.75});
+        //
+        conduit::Node &add_scenes = myactions.append();
+        add_scenes["action"] = "add_scenes";
+        add_scenes["scenes"] = myscenes;
+/*
+        conduit::Node &add_pipelines = myactions.append();
+        add_pipelines["action"] = "add_pipelines";
+        add_pipelines["pipelines"] = pipelines;
+        //
+        conduit::Node &add_scenes= myactions.append();
+        add_scenes["action"] = "add_scenes";
+        add_scenes["scenes"] = myscenes;
+        */
+        //}}}
+        /*
+        //{{{ actions --rendering
         Node myactions;
         Node &add_act = myactions.append();
         add_act["action"] = "add_scenes";
         Node &myscenes = add_act["scenes"];
         myscenes["s1/plots/p1/type"] = "pseudocolor";
-        myscenes["s1/plots/p1/field"] = "rhop";
+        //myscenes["s1/plots/p1/field"] = "rhop";
+        myscenes["s1/plots/p1/field"] = "vx"; // TODO
         //OK myscenes["s1/plots/p1/color_table/name"] = "Yellow - Gray - Blue";
         myscenes["s1/plots/p1/color_table/annotation"] = "true";
         // adjust the view camera to make a nicer plot
@@ -3363,10 +3514,12 @@ void JSph::SavePartData(unsigned npsave,unsigned nout,const JDataArrays& arrays
 //         add_ext["action"] = "add_extracts";
 //         add_ext["extracts"] = extracts;
         //
+        //}}}
+        */
+
         std::cout << myactions.to_yaml() << std::endl;
         string trigger_file = conduit::utils::join_file_path("./","simple_trigger_actions.yaml");
         conduit::utils::remove_path_if_exists(trigger_file);
-        //
         myascent.execute(myactions);
         myactions.save(trigger_file);
         //
@@ -3396,6 +3549,7 @@ void JSph::SavePartData(unsigned npsave,unsigned nout,const JDataArrays& arrays
         */  
     }
     //}}}
+//    }
 
     //-Deallocate of memory.
     delete[] posf3;
