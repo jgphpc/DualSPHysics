@@ -2,13 +2,14 @@
 # DualSPHysics GPU/CPU v5.4.316 21-02-2024
 #==================================================================
 
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.3)
 
 PROJECT(DualSPHysics)
 
 #------------------------------------------------------------------
 # Coupling options
 #------------------------------------------------------------------
+option(ENABLE_ASCENT "Enable the Insitu Ascent library" ON)
 option(ENABLE_CHRONO "Enable the Chrono Engine library" ON)
 option(ENABLE_WAVEGEN "Enable the WaveGen library" ON)
 option(ENABLE_MOORDYNPLUS "Enable the MoorDynPlus library" ON)
@@ -48,7 +49,8 @@ set(OBFLEXSTRUC JSphFlexStruc.cpp)
 # NVCC Flags
 #------------------------------------------------------------------
 if(ENABLE_CUDA)
-  find_package(CUDA QUIET)
+  find_package(CUDA)
+  message(STATUS "CUDA_VERSION=${CUDA_VERSION} CUDA_FOUND=${CUDA_FOUND}")
   if(CUDA_FOUND)
     if(CUDA_VERSION VERSION_LESS "7.5")
       message("Using CUDA version <7.5")
@@ -64,8 +66,10 @@ if(ENABLE_CUDA)
       list(APPEND CUDA_NVCC_FLAGS "-use_fast_math -O3 -D_WITHMR -D_WITHGPU -gencode=arch=compute_35,code=\"sm_35,compute_35\" -gencode=arch=compute_50,code=\"sm_50,compute_50\" -gencode=arch=compute_52,code=\"sm_52,compute_52\" -gencode=arch=compute_61,code=\"sm_61,compute_61\" -gencode=arch=compute_70,code=\"sm_70,compute_70\" -gencode=arch=compute_75,code=\"sm_75,compute_75\" -gencode=arch=compute_80,code=\"sm_80,compute_80\"")
     else()
       message("Using CUDA version >=12.0")
-      list(APPEND CUDA_NVCC_FLAGS "-use_fast_math -O3 -D_WITHMR -D_WITHGPU -Wno-deprecated-gpu-targets -DCUB_IGNORE_DEPRECATED_CPP_DIALECT -DTHRUST_IGNORE_DEPRECATED_CPP_DIALECT -gencode=arch=compute_61,code=\"sm_61,compute_61\" -gencode=arch=compute_70,code=\"sm_70,compute_70\" -gencode=arch=compute_75,code=\"sm_75,compute_75\" -gencode=arch=compute_80,code=\"sm_80,compute_80\" -gencode=arch=compute_86,code=\"sm_86,compute_86\" -gencode=arch=compute_89,code=\"sm_89,compute_89\" -gencode=arch=compute_90,code=\"sm_90,compute_90\"")
+      # list(APPEND CUDA_NVCC_FLAGS "-use_fast_math -O3 -D_WITHMR -D_WITHGPU -Wno-deprecated-gpu-targets -DCUB_IGNORE_DEPRECATED_CPP_DIALECT -DTHRUST_IGNORE_DEPRECATED_CPP_DIALECT -gencode=arch=compute_61,code=\"sm_61,compute_61\" -gencode=arch=compute_70,code=\"sm_70,compute_70\" -gencode=arch=compute_75,code=\"sm_75,compute_75\" -gencode=arch=compute_80,code=\"sm_80,compute_80\" -gencode=arch=compute_86,code=\"sm_86,compute_86\" -gencode=arch=compute_89,code=\"sm_89,compute_89\" -gencode=arch=compute_90,code=\"sm_90,compute_90\"")
+      list(APPEND CUDA_NVCC_FLAGS " -D_WITHMR -D_WITHGPU -Wno-deprecated-gpu-targets -DCUB_IGNORE_DEPRECATED_CPP_DIALECT -DTHRUST_IGNORE_DEPRECATED_CPP_DIALECT -gencode=arch=compute_90,code=\"sm_90,compute_90\"")
     endif()
+
   else()
     message("CUDA Libraries were not found.")
   endif(CUDA_FOUND)
@@ -136,13 +140,15 @@ set (CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})    
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   add_executable(DualSPHysics5.4CPU_linux64 ${OBJXML} ${OBJSPHMOTION} ${OBCOMMON} ${OBCOMMONDSPH} ${OBSPH} ${OBSPHSINGLE} ${OBWAVERZ} ${OBWAVERZGPU}  ${OBCHRONO} ${OBMOORDYNPLUS} ${OBINOUT} ${OBMESH} ${OBVRES} ${OBFLEXSTRUC})
-  add_dependencies(DualSPHysics5.4CPU_linux64 LibDSphMoorDynPlus)
+  ##  add_dependencies(DualSPHysics5.4CPU_linux64 LibDSphMoorDynPlus)
   install(TARGETS	DualSPHysics5.4CPU_linux64 DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+
   if (CUDA_FOUND)
     cuda_add_executable(DualSPHysics5.4_linux64 ${OBJXML} ${OBJSPHMOTION} ${OBCOMMON} ${OBCOMMONDSPH} ${OBSPH} ${OBSPHSINGLE} ${OBCOMMONGPU} ${OBSPHGPU} ${OBSPHSINGLEGPU} ${OBCUDA} ${OBWAVERZ} ${OBWAVERZCUDA} ${OBCHRONO} ${OBMOORDYNPLUS} ${OBINOUT} ${OBINOUTGPU} ${OBVRESGPU} ${OBWAVERZGPU} ${OBINOUTGPU} ${OBMESH} ${OBVRES} ${OBFLEXSTRUC})
-    add_dependencies(DualSPHysics5.4_linux64 LibDSphMoorDynPlus)
+    ## add_dependencies(DualSPHysics5.4_linux64 LibDSphMoorDynPlus)
     install(TARGETS DualSPHysics5.4_linux64 DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
   endif(CUDA_FOUND)
+
 elseif(MSVC) 
   add_executable(DualSPHysics5.4CPU_win64 ${OBJXML} ${OBJSPHMOTION} ${OBCOMMON} ${OBCOMMONDSPH} ${OBSPH} ${OBSPHSINGLE} ${OBWAVERZ} ${OBWAVERZGPU}  ${OBCHRONO} ${OBMOORDYNPLUS} ${OBINOUT} ${OBMESH} ${OBVRES} ${OBFLEXSTRUC})
   add_dependencies(DualSPHysics5.4CPU_win64 LibDSphMoorDynPlus)
@@ -165,7 +171,7 @@ endforeach(OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES )
 set(LINKER_FLAGS "")
 
 #------------------------------------------------------------------
-# Coupled libraries
+#{{{ Coupled libraries
 #------------------------------------------------------------------
 # Chrono Engine
 if(ENABLE_CHRONO)
@@ -205,19 +211,32 @@ else()
   set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DDISABLE_MOORDYNPLUS")
   set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDISABLE_MOORDYNPLUS")
 endif(ENABLE_MOORDYNPLUS)
-
-
+#}}}
 
 #------------------------------------------------------------------
 # Linker flags
 #------------------------------------------------------------------
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  target_link_libraries(DualSPHysics5.4CPU_linux64 ${LINKER_FLAGS})
-  set_target_properties(DualSPHysics5.4CPU_linux64 PROPERTIES COMPILE_FLAGS "-use_fast_math -O3 -D_WITHMR -fPIC -std=c++0x")
+
+  #{{{ ASCENT
+  if(ENABLE_ASCENT)
+    message(STATUS "ASCENT Enabled")
+    find_package(Ascent REQUIRED)
+    set(LINKER_FLAGS ${LINKER_FLAGS} MPI::MPI_C MPI::MPI_CXX ascent::ascent_mpi)
+  endif(ENABLE_ASCENT)
+  #}}}
   
-  if (CUDA_FOUND)
+  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(default_flags "-g -D_WITHMR -fPIC -std=c++0x")
+  elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(default_flags "-use_fast_math -O3 -D_WITHMR -fPIC -std=c++0x")
+  endif()
+
+  target_link_libraries(DualSPHysics5.4CPU_linux64 ${LINKER_FLAGS})
+  set_target_properties(DualSPHysics5.4CPU_linux64 PROPERTIES COMPILE_FLAGS ${default_flags})
+  if(CUDA_FOUND)
     target_link_libraries(DualSPHysics5.4_linux64 ${LINKER_FLAGS})
-    set_target_properties(DualSPHysics5.4_linux64 PROPERTIES COMPILE_FLAGS "-use_fast_math -O3 -D_WITHMR -D_WITHGPU -fPIC -std=c++0x")
+    set_target_properties(DualSPHysics5.4_linux64 PROPERTIES COMPILE_FLAGS "-D_WITHGPU ${default_flags}")
   endif(CUDA_FOUND)
   
 elseif(MSVC)
